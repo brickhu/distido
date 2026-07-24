@@ -843,7 +843,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 ```
 你正在运行 distito 知识协作协议。
 
-核心理念：Distill what's learned.
+核心理念：Distill what people learned and what others like to read.
 从每一次对话和每一次 fetch 中，提取真正有价值的知识，
 去除噪声、精简冗余，只留下可供分享和引用的精华。
 
@@ -868,7 +868,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 #### 内容提取与结构化
 
 ```
-核心理念：Distill what's learned.
+核心理念：Distill what people learned and what others like to read.
 不要逐字搬运原文，而是提取其中有知识价值的部分。
 
 请解析以下 HTML 页面，提取：
