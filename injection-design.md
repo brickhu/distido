@@ -1,4 +1,4 @@
-# distito Remix 知识引用与衍生网络设计
+# distito Inject 知识引用与衍生网络设计
 
 > 版本：v0.2 · 2026-07-24
 > 领域：distito.com — 基于AI 对话的知识协作网络
@@ -7,20 +7,20 @@
 
 ## 1. 概念模型
 
-### 1.1 什么是 Remix
+### 1.1 什么是 Inject
 
-**Remix** 是 distito 的知识衍生机制——**类似 GitHub 的 Fork，但面向知识文章。**
+**Inject** 是 distito 的知识衍生机制——**类似 GitHub 的 Fork，但面向知识文章。**
 
 用户可以在 AI 对话中引用现有文章，将它的内容以「知识参考」身份注入当前上下文；当用户蒸馏发布新文章时，新文章自动标记「衍生自」被引用的文章，形成一张**有向知识协作网络**。
 
 ### 1.2 比喻对照
 
-| GitHub Fork | distito Remix |
+| GitHub Fork | distito Inject |
 |---|---|
 | Fork 一个仓库 | 引用一篇文章到对话上下文 |
 | 在 Fork 上做修改 | 结合参考资料继续对话、思考 |
 | 提交 PR / 发布 Release | 蒸馏发布新文章 |
-| Fork 关系追溯 | `remix_from` 元数据字段 |
+| Fork 关系追溯 | `inject_from` 元数据字段 |
 | 仓库网络图 | 知识衍生图谱 |
 | 个人/组织下多个仓库 | 用户下多个 Base |
 
@@ -31,7 +31,7 @@
   [原文A · 原文B] ──────────────> [当前对话] ──────────────> [新文章C]
                                      │                          │
                                      │ context:                  │ metadata:
-                                     │   ┌─ 参考资料 ─┐          │   remix_from:
+                                     │   ┌─ 参考资料 ─┐          │   inject_from:
                                      │   │ 原文A (全文) │          │     [A, B]
                                      │   │ 原文B (全文) │          │   base_id: B
                                      │   └─────────────┘          │
@@ -126,7 +126,7 @@ UNIQUE(base_id, user_id)
 
 **关键设计**：Base 的可见性是公开的，所以 `viewer` 角色是所有已登录用户的隐式默认角色。显式写入 `BaseMember` 的角色是 `owner` / `admin` / `contributor`。
 
-### 3.3 Article（扩展 remix 字段）
+### 3.3 Article（扩展 inject 字段）
 
 ```sql
 Article
@@ -140,8 +140,8 @@ Article
 ├── content                 TEXT NOT NULL     -- 正文（Markdown）
 ├── excerpt                 TEXT?             -- 摘要 / 引言
 │
-├── remix_from             UUID[] DEFAULT '{}'  -- 本文衍生自哪些文章 ID
-├── remix_count            INTEGER DEFAULT 0    -- 被多少篇文章衍生引用
+├── inject_from             UUID[] DEFAULT '{}'  -- 本文衍生自哪些文章 ID
+├── injection_count            INTEGER DEFAULT 0    -- 被多少篇文章衍生引用
 │
 ├── related_to             UUID[] DEFAULT '{}'  -- 同一次会话中产生的关联文章
 ├── session_id             UUID?             -- 来源对话的会话 ID
@@ -160,7 +160,7 @@ Article
 ├── metadata               JSONB DEFAULT '{}'
 │   └─ {
 │       "tags": [...],
-│       "remix_notes": {
+│       "injection_notes": {
 │         "<article_id>": "用户引用时写的补充说明"
 │       }
 │     }
@@ -176,21 +176,21 @@ INDEX(agent_id)              -- 按代理筛选
 INDEX(model_id)              -- 按模型筛选
 ```
 
-**`remix_from` vs `related_to` 的语义区别**：
+**`inject_from` vs `related_to` 的语义区别**：
 
 | 字段 | 关系类型 | 触发条件 | 用途 |
 |------|---------|---------|------|
-| `remix_from` | **知识引用**（跨会话） | 用户 `=> <URL>` 引用外部知识 | 知识图谱追溯、remix 网络 |
+| `inject_from` | **知识引用**（跨会话） | 用户 `=> <URL>` 引用外部知识 | 知识图谱追溯、inject 网络 |
 | `related_to` | **同源文章**（同会话） | 同一次对话中蒸馏出多篇文章 | 追踪一次对话产出了哪些文章 |
 
 **会话追溯**：通过 `session_id` + `agent_id`，用户可在 `app.distito.com` 上查看到：
 - 某次对话蒸馏出的所有文章
 - 某个 AI 代理（如 Kun）蒸馏的所有文章
 
-### 3.4 RemixEdge（引用关系边表）
+### 3.4 InjectionEdge（引用关系边表）
 
 ```sql
-RemixEdge
+InjectionEdge
 ├── id                      UUID PRIMARY KEY
 ├── source_article_id → Article     NOT NULL  -- 被引用的文章（upstream）
 ├── derived_article_id → Article    NOT NULL  -- 衍生出的文章（fork）
@@ -251,9 +251,9 @@ User ──1:N── BaseMember ──N:1── Base
  │ 1:N                             Article
  └─────────────────────────────────┤
                                    │
-                                   ├── remix_from: UUID[] (自引用多对多)
+                                   ├── inject_from: UUID[] (自引用多对多)
                                    │
-                                   └── 1:N ── RemixEdge (as derived)
+                                   └── 1:N ── InjectionEdge (as derived)
                                                    │
                                                    └── N:1 ── Article (as source)
 ```
@@ -306,8 +306,8 @@ GET /api/resolve?url=https://distito.com/tech/ci-cd-core-principles
     "excerpt": "CI/CD 的核心是自动化...",
     "content": "## CI/CD 核心原理\n\n...全文...",
     "published_at": "2026-07-23T12:00:00Z",
-    "remix_from": [],
-    "remix_count": 3,
+    "inject_from": [],
+    "injection_count": 3,
     "metadata": {
       "tags": ["devops", "ci-cd"]
     }
@@ -336,13 +336,13 @@ GET    /api/agents/:agentId/articles                              — 某个代�
 GET    /api/models/:modelId/articles                              — 某个模型生成的所有文章
 ```
 
-**POST 发布（含 remix / related_to）**：
+**POST 发布（含 inject / related_to）**：
 ```json
 {
   "title": "我对 CI/CD 的新思考",
   "content": "基于引用文章，我补充了...",
   "excerpt": "从 CI/CD 到持续部署的延伸思考",
-  "remix_from": [
+  "inject_from": [
     "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
   ],
   "related_to": [
@@ -350,7 +350,7 @@ GET    /api/models/:modelId/articles                              — 某个模�
   ],
   "session_id": "会话 UUID",
   "agent_id": "kun",
-  "remix_notes": {
+  "injection_notes": {
     "a1b2c3d4-e5f6-7890-abcd-ef1234567890": "这篇给了我很大启发"
   },
   "metadata": {
@@ -360,17 +360,17 @@ GET    /api/models/:modelId/articles                              — 某个模�
 ```
 
 服务端自动操作：
-1. 创建 Article，写入 `base_id` / `remix_from`
-2. 为每个 source → derived 创建 `RemixEdge`
-3. 递增每个 source 文章的 `remix_count`
+1. 创建 Article，写入 `base_id` / `inject_from`
+2. 为每个 source → derived 创建 `InjectionEdge`
+3. 递增每个 source 文章的 `injection_count`
 
-### 4.4 Remix 查询
+### 4.4 Inject 查询
 
 ```
-GET /api/articles/:articleId/remixes
-  → 双向引用列表（哪些文章是 remix_from，哪些是 remixed_by）
+GET /api/articles/:articleId/injections
+  → 双向引用列表（哪些文章是 inject_from，哪些是 injected_by）
 
-GET /api/articles/:articleId/remix-graph?depth=2
+GET /api/articles/:articleId/injection-graph?depth=2
   → 知识衍生图谱（上游祖先 + 下游派生）
 ```
 
@@ -393,7 +393,7 @@ GET /api/articles/:articleId/remix-graph?depth=2
          │
          ├─ 有 <script type="application/distito+json">?
          │    ↓
-         │  识别为 remix → 提取结构化元数据
+         │  识别为 inject → 提取结构化元数据
          │  从 <body> 正文标签提取全文
          │
          └─ 无 distito+json 标记?
@@ -410,15 +410,15 @@ GET /api/articles/:articleId/remix-graph?depth=2
          │
          ▼
 ④ 组装为统一参考资料格式
-   ├─ 有 distito+json + remix_from? → 注入 + 记录 SessionCitation
-   ├─ 有 distito+json 无 remix_from? → 注入 + reference 类型
+   ├─ 有 distito+json + inject_from? → 注入 + 记录 SessionCitation
+   ├─ 有 distito+json 无 inject_from? → 注入 + reference 类型
    └─ 无 distito+json?               → 注入 + reference 类型
 ```
 
-| 来源 | 类型 | 追踪 remix |
+| 来源 | 类型 | 追踪 inject |
 |------|------|-----------|
-| `=> distito.com/...` | `remix` | ✅ |
-| `=> fei.me/...`（含 distito+json） | `remix` | ✅ |
+| `=> distito.com/...` | `inject` | ✅ |
+| `=> fei.me/...`（含 distito+json） | `inject` | ✅ |
 | `=> 任意 URL（无 distito+json）` | `reference` | ❌ |
 
 ### 5.2 application/distito+json 标准
@@ -441,7 +441,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
     "name": "技术博客"
   },
   "published_at": "2026-07-23T12:00:00Z",
-  "remix_from": ["uuid-xyz-789"],
+  "inject_from": ["uuid-xyz-789"],
   "tags": ["devops", "ci-cd"],
   "url": "https://distito.com/tech/ci-cd-core-principles"
 }
@@ -459,15 +459,15 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 | `base` | 是 | 所属 Base（slug / name） |
 | `published_at` | 是 | 发布时间 |
 | `url` | 是 | 原始文章链接（任何域名下都可追溯回原址） |
-| `remix_from` | 否 | 上游文章 UUID 列表，有则标记为 remix 类型 |
+| `inject_from` | 否 | 上游文章 UUID 列表，有则标记为 inject 类型 |
 | `tags` | 否 | 标签 |
 
 **Agent 处理规则**：
 1. fetch HTML 后扫描 `<script type="application/distito+json">`
 2. 检查 `@context === "https://distito.com/rsd/1.0"`
 3. 是 → 从 `<article>` 或 `<body>` 提取正文；从 script block 提取元数据
-4. 有 `remix_from` → 标记为 `remix` 类型并记录引用
-5. 无 `remix_from` → 标记为 `reference` 类型
+4. 有 `inject_from` → 标记为 inject` 类型并记录引用
+5. 无 `inject_from` → 标记为 `reference` 类型
 6. 合并组装为参考资料注入
 
 > **开放标准**：任何第三方站点只需在页面中加入这个 `<script>` 块，
@@ -505,7 +505,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 
 ### [1] CI/CD 核心原理
 
-- **类型**: Remix 🔗（可追踪衍生关系）
+- **类型**: Inject 🔗（可追踪衍生关系）
 - **作者**: Alice
 - **Base**: 技术博客
 - **原始链接**: https://distito.com/tech/ci-cd-core-principles
@@ -533,20 +533,20 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 
 | 要点 | 说明 |
 |------|------|
-| **统一格式** | remix 和 reference 使用同一模板，仅类型标签不同 |
-| **类型区分** | Remix 🔗 可追踪衍生；外部引用 📎 仅参考 |
+| **统一格式** | inject 和 reference 使用同一模板，仅类型标签不同 |
+| **类型区分** | Inject 🔗 可追踪衍生；外部引用 📎 仅参考 |
 | **元数据前置** | 作者/来源/摘要先于正文，模型可快速判断相关性 |
 | **正文边界** | `--- 正文开始/结束 ---` 标记，防止与消息混淆 |
 | **Token 优化** | 超长（>4000 token）自动截断，附截断提示 |
 
-### 5.6 SessionCitation（仅 remix 类型记录）
+### 5.6 SessionCitation（仅 inject 类型记录）
 
 ```json
 {
   "cited_articles": [
     {
       "article_id": "a1b2c3d4...",
-      "type": "remix",
+      "type": "inject",
       "title": "CI/CD 核心原理",
       "author": { "id": "...", "display_name": "Alice" },
       "base": { "slug": "tech", "name": "技术博客" },
@@ -557,7 +557,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 }
 ```
 
-外部引用不写入 `cited_articles`，因此后续蒸馏发布的 `remix_from` 仅包含 distito 可定位的内容。
+外部引用不写入 `cited_articles`，因此后续蒸馏发布的 `inject_from` 仅包含 distito 可定位的内容。
 
 ### 5.7 引用确认回复
 
@@ -586,7 +586,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 
 ---
 
-## 6. 蒸馏发布流程（含 Remix）
+## 6. 蒸馏发布流程（含 Injection）
 
 ### 6.1 发布流程
 
@@ -636,7 +636,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 | 明确新文章 | `写一篇新文章`、`另外总结一下 xxx` | 自动创建新文，不弹窗 |
 | 不明确 | `总结为文章`、`帮我发布` | 弹窗让用户选择 |
 
-- 选择「更新」→ PUT 更新已有文章（remix_from 累计追加）
+- 选择「更新」→ PUT 更新已有文章（inject_from 累计追加）
 - 选择「新文章」→ 创建新草稿，当前会话可绑定多篇文章
 - 架构上通过 `SessionCitation.current_draft` 管理
 
@@ -648,12 +648,12 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 ② 系统蒸馏 → 生成文章预览
 
          ↓
-③ 构建 remix_from
+③ 构建 inject_from
    ├─ 从 SessionCitation.cited_articles 提取文章 ID 列表
-   └─ 写入新文章的 remix_from
+   └─ 写入新文章的 inject_from
 
          ↓
-④ 展示预览（含 Remix 来源信息）
+④ 展示预览（含 Inject 来源信息）
    ┌─────────────────────────────────────────┐
    │ 📝 草稿                                 │
    │                                         │
@@ -673,9 +673,9 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 
          ↓
 ⑤ 用户确认 → 发布
-   ├─ 创建 Article（含 base_id / remix_from / remix_notes）
-   ├─ 写入 RemixEdge
-   ├─ 递增 remix_count
+   ├─ 创建 Article（含 base_id / inject_from / injection_notes）
+   ├─ 写入 InjectionEdge
+   ├─ 递增 injection_count
    └─ 返回发布成功
 ```
 
@@ -727,11 +727,11 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
          ▼
 ② 获取内容来源
    ├─ 有 URL?          → fetch → 解析 → 质量校验
-   │                     ├─ distito+json? → remix 类型
+   │                     ├─ distito+json? → inject 类型
    │                     └─ 无?           → reference 类型
    │
    ├─ 有附件/文件?      → 从对话上下文读取已上传的文件内容
-   │                     作为蒸馏源材料（不标记 remix）
+   │                     作为蒸馏源材料（不标记 inject）
    │
    └─ 两者都无?         → 蒸馏当前对话内容本身
          │
@@ -749,9 +749,9 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 
 **三种内容来源的行为差异**：
 
-| 来源 | 触发 | 内容获取 | remix 记录 |
+| 来源 | 触发 | 内容获取 | inject 记录 |
 |------|------|---------|-----------|
-| URL | `=> <url> 指令` | web fetch | ✅ 记录 remix_from |
+| URL | `=> <url> 指令` | web fetch | ✅ 记录 inject_from |
 | 附件/文件 | `=> 指令`（已传文件） | 从对话上下文读取 | ❌ 不记录 |
 | 对话本身 | `=> 指令`（无 URL 无文件） | 蒸馏对话历史 | ❌ 不记录 |
 
@@ -763,7 +763,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 | `=> <url>` | 引用知识注入上下文，等待后续对话 |
 | `=> <url> 翻译为英文` | 引用 + AI 翻译 → 输出 |
 | `=> <url1>, <url2> 融合观点` | 引用多篇 + AI 融合 → 输出 |
-| `=> <url> 总结为文章并发布到 tech base` | 引用 + 蒸馏 → 预览 → 确认 → 发布（含 remix_from） |
+| `=> <url> 总结为文章并发布到 tech base` | 引用 + 蒸馏 → 预览 → 确认 → 发布（含 inject_from） |
 
 ### 7.3 提示词与输出模板
 
@@ -785,7 +785,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 注意事项：
 - 从 HTML 中优先提取正文内容，去除导航/广告/页脚
 - 检查 <script type="application/distito+json"> 获取结构化元数据
-- 有 remix_from 字段的标记为 remix 类型并记录引用关系
+- 有 inject_from 字段的标记为 inject 类型并记录引用关系
 - 外部 URL 无 distito+json 则标记为 reference 类型
 - 不要将参考知识与你的回答混淆
 ```
@@ -798,7 +798,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 1. 标题（优先 og:title，其次 <title>）
 2. 正文内容（从 <article> 或 <main> 或 <body> 提取可读文本，去除 script/style/nav/footer）
 3. 元数据：
-   - 是否有 <script type="application/distito+json">？如有，解析其中的 @context, id, title, author, base, remix_from
+   - 是否有 <script type="application/distito+json">？如有，解析其中的 @context, id, title, author, base, inject_from
    - og:description 或 meta[name=description]
    - 发布日期（如有）
 4. 内容统计：清洗后纯文本字数
@@ -830,7 +830,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 
 ### [1] {{标题}}
 
-- **类型**: {{Remix 🔗 或 外部引用 📎}}
+- **类型**: {{Injection 🔗 或 外部引用 📎}}
 - **作者**: {{作者名}}
 - **来源**: {{原始链接}}
 - **摘要**: {{摘要}}
@@ -929,7 +929,7 @@ distito.com/tech
 └──────────────────────────────────────┘
 ```
 
-### 8.2 文章页 Remix 区块
+### 8.2 文章页 Inject 区块
 
 ```
 distito.com/tech/ci-cd-core-principles
@@ -967,4 +967,4 @@ distito.com/tech/ci-cd-core-principles
 | 引用上限 | 固定 vs 弹性 | **≤ 5 篇/次** | 平衡上下文窗口和引用质量 |
 | 循环引用检测 | 必要 vs 非必要 | **必要** | A → B 后 B → A 无意义，需阻断 |
 | Base 可见性 | 可配置 vs 强制公开 | **全部公开可见** | 构建知识网络的前提是公开可引用 |
-| 存储 remix 关系 | 数组 vs 边表 | **两者都用** | 数组快速读，边表供图谱遍历 |
+| 存储 inject 关系 | 数组 vs 边表 | **两者都用** | 数组快速读，边表供图谱遍历 |

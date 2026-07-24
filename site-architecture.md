@@ -1,7 +1,7 @@
 # distito 站点架构与项目结构
 
 > v0.2 · 2026-07-24
-> 关联文档: [remix-design.md](./remix-design.md)
+> 关联文档: [injection-design.md](./injection-design.md)
 
 ---
 
@@ -130,7 +130,7 @@ distito/
 │
 ├── reserved-slugs.json    ← 保留路径列表（不可用作 base-slug 的二级路径）
 ├── AGENT.md               ← 项目总览与约定
-├── remix-design.md        ← Remix 功能设计文档
+├── injection-design.md        ← Inject 功能设计文档
 └── site-architecture.md   ← 本文档（站点架构与项目结构）
 ```
 
@@ -199,8 +199,8 @@ distito/
 - 文章 CRUD
 - Base CRUD + 成员管理
 - 用户认证（通过 Supabase Auth 内置的 GitHub OAuth）
-- Widget 数据 API（likes / remixes / comments）
-- Remix 关系管理
+- Widget 数据 API（likes / injectes / comments）
+- Inject 关系管理
 - 搜索
 - Webhook 触发构建通知
 
@@ -295,7 +295,7 @@ pip install distito-mcp
       "name": "技术博客"
     },
     "published_at": "2026-07-23T12:00:00Z",
-    "remix_from": [],
+    "inject_from": [],
     "tags": ["devops", "ci-cd"],
     "url": "https://distito.com/tech/ci-cd-core-principles"
   }
@@ -324,15 +324,15 @@ widget.js
 ├── 核心功能：
 │   ├── 从 <script type="application/distito+json"> 读取 article_id / base_slug
 │   ├── 调 GET api.distito.com/api/widget/:articleId/stats
-│   │   → 返回 { likes, remixes, comments_count }
+│   │   → 返回 { likes, injections, comments_count }
 │   ├── 调 GET api.distito.com/api/widget/:articleId/comments?limit=5
 │   │   → 返回最近评论
-│   ├── 渲染底部交互栏（like / remix / comment 按钮 + 计数）
+│   ├── 渲染底部交互栏（like / inject / comment 按钮 + 计数）
 │   └── 渲染全局浮动操作入口（floating action button）
 │
 ├── 认证态：
 │   ├── 未登录 → 按钮点击后弹出登录提示
-│   └── 已登录 → 直接操作（like / comment / remix）
+│   └── 已登录 → 直接操作（like / comment / inject）
 │
 └── 构建输出：
     └── 单文件 widget.js → 上传到 Cloudflare Pages 的 /assets/widget.js
@@ -500,10 +500,10 @@ cd api && supabase functions deploy --no-verify-jwt
 ```
 AGENT.md  ─── 项目总览
   │
-  ├──→ remix-design.md     ─── Remix 功能的数据模型 + API + 流程 + 提示词模板
+  ├──→ injection-design.md     ─── Inject 功能的数据模型 + API + 流程 + 提示词模板
   │
   └──→ site-architecture.md ─── 本文档：域名、项目结构、部署
-                                └── 引用 remix-design.md 中的模型定义
+                                └── 引用 injection-design.md 中的模型定义
 
 
 builder/        ───→ 调 api.distito.com 获取数据
@@ -648,7 +648,7 @@ Edge Functions
 
 公开端点（无需登录）：
   ├─ GET /api/resolve           — URL 解析
-  ├─ GET /api/widget/:id/stats  — likes/remixes/comments
+  ├─ GET /api/widget/:id/stats  — likes/injections/comments
   └─ GET /api/widget/:id/comments
 
 需认证端点：
@@ -967,7 +967,7 @@ async def remove_mapping(domain, mount_type, mount_point):
 | website 与 builder 关系 | **独立，不重叠** | website 是 SPA 通过 API 取数据；builder 只生成静态文章页 |
 | Webhook 触发构建 | **发布时实时触发** | 零成本（免费额度内），用户无等待 |
 | 域名分离 | **distito.com + app.distito.com** | 内容站和管理站关注点分离，SEO 不受登录态干扰 |
-| URL 格式 | **`base-slug/article-slug`** | 见 remix-design.md，为未来多用户协作预留 |
+| URL 格式 | **`base-slug/article-slug`** | 见 injection-design.md，为未来多用户协作预留 |
 | Base slug 最小长度 | **4 字符** | 3 字符以内归官网 SPA 路由，天然保护 |
 | 保留路径 | **配置文件管理** | `reserved-slugs.json` 被 builder + fastapi 共用校验 |
 | 自定义域名模型 | **通用 URL 重写表** | `rewrite_prefix` 不限定为 Base，支持任意路径 |

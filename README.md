@@ -17,7 +17,7 @@ User chats with AI
   → Types => to distill insights
   → Publishes as a knowledge node
   → Others reference via => URL
-  → Remix, reuse, build upon
+  → Inject, reuse, build upon
 ```
 
 ## Why distito
@@ -26,7 +26,7 @@ User chats with AI
 
 - **`=>`** — A universal command to distill, cite, and publish knowledge from any AI conversation
 - **`=> <URL>`** — Inject any web page as structured reference knowledge into your current conversation
-- **Remix Network** — Every article tracks its sources (`remix_from`) and descendants (`remixed_by`), forming a directed knowledge graph
+- **Injection Network** — Every article tracks its sources (`inject_from`) and descendants (`injected_by`), forming a directed knowledge graph
 - **Custom Domains** — Own your namespace. Map `fei.me/cn` → your Chinese base, `fei.me/en` → your English base
 - **Open Protocol** — `application/distito+json` standard makes any page AI-citable
 
@@ -57,7 +57,7 @@ distito/
 ├── database/        DDL schemas & seed data
 ├── ops/             Cloudflare Pages configs
 ├── AGENT.md         Chinese product overview (detailed)
-├── remix-design.md  Full feature design document (Chinese)
+├── injection-design.md  Full feature design document (Chinese)
 ├── site-architecture.md  Architecture & deployment design (Chinese)
 ├── reserved-slugs.json   Slug reservation list
 └── .gitignore
