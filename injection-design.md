@@ -89,7 +89,7 @@ Base
 ├── slug                    VARCHAR UNIQUE NOT NULL  -- 全局唯一，URL 标识
 ├── name                    VARCHAR NOT NULL          -- 显示名称
 ├── description             TEXT?                     -- 简介
-├── icon                    VARCHAR?                  -- Emoji 图标
+├── logo                    TEXT?                     -- Base 图标/Logo URL
 │
 ├── settings                JSONB NOT NULL DEFAULT '{}'
 │   └─ {
