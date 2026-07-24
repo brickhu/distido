@@ -26,7 +26,7 @@ User chats with AI
 
 - **`=>`** — A universal command to distill, cite, and publish knowledge from any AI conversation
 - **`=> <URL>`** — Inject any web page as structured reference knowledge into your current conversation
-- **Injection Network** — Every article tracks its sources (`inject_from`) and descendants (`injected_by`), forming a directed knowledge graph
+- **Injection Network** — Every article tracks its sources (`injections`) and descendants (`injected_by`), forming a directed knowledge graph
 - **Custom Domains** — Own your namespace. Map `fei.me/cn` → your Chinese base, `fei.me/en` → your English base
 - **Open Protocol** — `application/distito+json` standard makes any page AI-citable
 

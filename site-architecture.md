@@ -295,7 +295,7 @@ pip install distito-mcp
       "name": "技术博客"
     },
     "published_at": "2026-07-23T12:00:00Z",
-    "inject_from": [],
+    "injections": [],
     "tags": ["devops", "ci-cd"],
     "url": "https://distito.com/tech/ci-cd-core-principles"
   }

@@ -20,7 +20,7 @@
 | Fork 一个仓库 | 引用一篇文章到对话上下文 |
 | 在 Fork 上做修改 | 结合参考资料继续对话、思考 |
 | 提交 PR / 发布 Release | 蒸馏发布新文章 |
-| Fork 关系追溯 | `inject_from` 元数据字段 |
+| Fork 关系追溯 | `injections` 元数据字段 |
 | 仓库网络图 | 知识衍生图谱 |
 | 个人/组织下多个仓库 | 用户下多个 Base |
 
@@ -31,7 +31,7 @@
   [原文A · 原文B] ──────────────> [当前对话] ──────────────> [新文章C]
                                      │                          │
                                      │ context:                  │ metadata:
-                                     │   ┌─ 参考资料 ─┐          │   inject_from:
+                                     │   ┌─ 参考资料 ─┐          │   injections:
                                      │   │ 原文A (全文) │          │     [A, B]
                                      │   │ 原文B (全文) │          │   base_id: B
                                      │   └─────────────┘          │
@@ -140,8 +140,8 @@ Article
 ├── content                 TEXT NOT NULL     -- 正文（Markdown）
 ├── excerpt                 TEXT?             -- 摘要 / 引言
 │
-├── inject_from             UUID[] DEFAULT '{}'  -- 本文衍生自哪些文章 ID
-├── injection_count            INTEGER DEFAULT 0    -- 被多少篇文章衍生引用
+├── injections             UUID[] DEFAULT '{}'  -- 本文衍生自哪些文章 ID
+├── injected_count            INTEGER DEFAULT 0    -- 被多少篇文章衍生引用
 │
 ├── related_to             UUID[] DEFAULT '{}'  -- 同一次会话中产生的关联文章
 ├── session_id             UUID?             -- 来源对话的会话 ID
@@ -176,11 +176,11 @@ INDEX(agent_id)              -- 按代理筛选
 INDEX(model_id)              -- 按模型筛选
 ```
 
-**`inject_from` vs `related_to` 的语义区别**：
+**`injections` vs `related_to` 的语义区别**：
 
 | 字段 | 关系类型 | 触发条件 | 用途 |
 |------|---------|---------|------|
-| `inject_from` | **知识引用**（跨会话） | 用户 `=> <URL>` 引用外部知识 | 知识图谱追溯、inject 网络 |
+| `injections` | **知识引用**（跨会话） | 用户 `=> <URL>` 引用外部知识 | 知识图谱追溯、inject 网络 |
 | `related_to` | **同源文章**（同会话） | 同一次对话中蒸馏出多篇文章 | 追踪一次对话产出了哪些文章 |
 
 **会话追溯**：通过 `session_id` + `agent_id`，用户可在 `app.distito.com` 上查看到：
@@ -251,7 +251,7 @@ User ──1:N── BaseMember ──N:1── Base
  │ 1:N                             Article
  └─────────────────────────────────┤
                                    │
-                                   ├── inject_from: UUID[] (自引用多对多)
+                                   ├── injections: UUID[] (自引用多对多)
                                    │
                                    └── 1:N ── InjectionEdge (as derived)
                                                    │
@@ -306,8 +306,8 @@ GET /api/resolve?url=https://distito.com/tech/ci-cd-core-principles
     "excerpt": "CI/CD 的核心是自动化...",
     "content": "## CI/CD 核心原理\n\n...全文...",
     "published_at": "2026-07-23T12:00:00Z",
-    "inject_from": [],
-    "injection_count": 3,
+    "injections": [],
+    "injected_count": 3,
     "metadata": {
       "tags": ["devops", "ci-cd"]
     }
@@ -342,7 +342,7 @@ GET    /api/models/:modelId/articles                              — 某个模�
   "title": "我对 CI/CD 的新思考",
   "content": "基于引用文章，我补充了...",
   "excerpt": "从 CI/CD 到持续部署的延伸思考",
-  "inject_from": [
+  "injections": [
     "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
   ],
   "related_to": [
@@ -360,15 +360,15 @@ GET    /api/models/:modelId/articles                              — 某个模�
 ```
 
 服务端自动操作：
-1. 创建 Article，写入 `base_id` / `inject_from`
+1. 创建 Article，写入 `base_id` / `injections`
 2. 为每个 source → derived 创建 `InjectionEdge`
-3. 递增每个 source 文章的 `injection_count`
+3. 递增每个 source 文章的 `injected_count`
 
 ### 4.4 Inject 查询
 
 ```
 GET /api/articles/:articleId/injections
-  → 双向引用列表（哪些文章是 inject_from，哪些是 injected_by）
+  → 双向引用列表（哪些文章是 injections，哪些是 injected_by）
 
 GET /api/articles/:articleId/injection-graph?depth=2
   → 知识衍生图谱（上游祖先 + 下游派生）
@@ -410,8 +410,8 @@ GET /api/articles/:articleId/injection-graph?depth=2
          │
          ▼
 ④ 组装为统一参考资料格式
-   ├─ 有 distito+json + inject_from? → 注入 + 记录 SessionCitation
-   ├─ 有 distito+json 无 inject_from? → 注入 + reference 类型
+   ├─ 有 distito+json + injections? → 注入 + 记录 SessionCitation
+   ├─ 有 distito+json 无 injections? → 注入 + reference 类型
    └─ 无 distito+json?               → 注入 + reference 类型
 ```
 
@@ -441,7 +441,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
     "name": "技术博客"
   },
   "published_at": "2026-07-23T12:00:00Z",
-  "inject_from": ["uuid-xyz-789"],
+  "injections": ["uuid-xyz-789"],
   "tags": ["devops", "ci-cd"],
   "url": "https://distito.com/tech/ci-cd-core-principles"
 }
@@ -459,15 +459,15 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 | `base` | 是 | 所属 Base（slug / name） |
 | `published_at` | 是 | 发布时间 |
 | `url` | 是 | 原始文章链接（任何域名下都可追溯回原址） |
-| `inject_from` | 否 | 上游文章 UUID 列表，有则标记为 inject 类型 |
+| `injections` | 否 | 上游文章 UUID 列表，有则标记为 inject 类型 |
 | `tags` | 否 | 标签 |
 
 **Agent 处理规则**：
 1. fetch HTML 后扫描 `<script type="application/distito+json">`
 2. 检查 `@context === "https://distito.com/rsd/1.0"`
 3. 是 → 从 `<article>` 或 `<body>` 提取正文；从 script block 提取元数据
-4. 有 `inject_from` → 标记为 inject` 类型并记录引用
-5. 无 `inject_from` → 标记为 `reference` 类型
+4. 有 `injections` → 标记为 inject` 类型并记录引用
+5. 无 `injections` → 标记为 `reference` 类型
 6. 合并组装为参考资料注入
 
 > **开放标准**：任何第三方站点只需在页面中加入这个 `<script>` 块，
@@ -557,7 +557,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 }
 ```
 
-外部引用不写入 `cited_articles`，因此后续蒸馏发布的 `inject_from` 仅包含 distito 可定位的内容。
+外部引用不写入 `cited_articles`，因此后续蒸馏发布的 `injections` 仅包含 distito 可定位的内容。
 
 ### 5.7 引用确认回复
 
@@ -636,7 +636,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 | 明确新文章 | `写一篇新文章`、`另外总结一下 xxx` | 自动创建新文，不弹窗 |
 | 不明确 | `总结为文章`、`帮我发布` | 弹窗让用户选择 |
 
-- 选择「更新」→ PUT 更新已有文章（inject_from 累计追加）
+- 选择「更新」→ PUT 更新已有文章（injections 累计追加）
 - 选择「新文章」→ 创建新草稿，当前会话可绑定多篇文章
 - 架构上通过 `SessionCitation.current_draft` 管理
 
@@ -648,9 +648,9 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 ② 系统蒸馏 → 生成文章预览
 
          ↓
-③ 构建 inject_from
+③ 构建 injections
    ├─ 从 SessionCitation.cited_articles 提取文章 ID 列表
-   └─ 写入新文章的 inject_from
+   └─ 写入新文章的 injections
 
          ↓
 ④ 展示预览（含 Inject 来源信息）
@@ -673,9 +673,9 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 
          ↓
 ⑤ 用户确认 → 发布
-   ├─ 创建 Article（含 base_id / inject_from / injection_notes）
+   ├─ 创建 Article（含 base_id / injections / injection_notes）
    ├─ 写入 InjectionEdge
-   ├─ 递增 injection_count
+   ├─ 递增 injected_count
    └─ 返回发布成功
 ```
 
@@ -751,7 +751,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 
 | 来源 | 触发 | 内容获取 | inject 记录 |
 |------|------|---------|-----------|
-| URL | `=> <url> 指令` | web fetch | ✅ 记录 inject_from |
+| URL | `=> <url> 指令` | web fetch | ✅ 记录 injections |
 | 附件/文件 | `=> 指令`（已传文件） | 从对话上下文读取 | ❌ 不记录 |
 | 对话本身 | `=> 指令`（无 URL 无文件） | 蒸馏对话历史 | ❌ 不记录 |
 
@@ -763,7 +763,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 | `=> <url>` | 引用知识注入上下文，等待后续对话 |
 | `=> <url> 翻译为英文` | 引用 + AI 翻译 → 输出 |
 | `=> <url1>, <url2> 融合观点` | 引用多篇 + AI 融合 → 输出 |
-| `=> <url> 总结为文章并发布到 tech base` | 引用 + 蒸馏 → 预览 → 确认 → 发布（含 inject_from） |
+| `=> <url> 总结为文章并发布到 tech base` | 引用 + 蒸馏 → 预览 → 确认 → 发布（含 injections） |
 
 ### 7.3 提示词与输出模板
 
@@ -785,7 +785,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 注意事项：
 - 从 HTML 中优先提取正文内容，去除导航/广告/页脚
 - 检查 <script type="application/distito+json"> 获取结构化元数据
-- 有 inject_from 字段的标记为 inject 类型并记录引用关系
+- 有 injections 字段的标记为 inject 类型并记录引用关系
 - 外部 URL 无 distito+json 则标记为 reference 类型
 - 不要将参考知识与你的回答混淆
 ```
@@ -798,7 +798,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 1. 标题（优先 og:title，其次 <title>）
 2. 正文内容（从 <article> 或 <main> 或 <body> 提取可读文本，去除 script/style/nav/footer）
 3. 元数据：
-   - 是否有 <script type="application/distito+json">？如有，解析其中的 @context, id, title, author, base, inject_from
+   - 是否有 <script type="application/distito+json">？如有，解析其中的 @context, id, title, author, base, injections
    - og:description 或 meta[name=description]
    - 发布日期（如有）
 4. 内容统计：清洗后纯文本字数
