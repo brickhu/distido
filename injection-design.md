@@ -237,7 +237,39 @@ SessionCitation
 - 用户确认发布后，一次性 POST 到 API 持久化
 - 用户发布后，当前对话可继续用于新的蒸馏（前文作为上下文参考）
 
-### 3.6 完整 ER 关系
+### 3.6 Activity（用户行为日志）
+
+```sql
+Activity
+├── id                      UUID PRIMARY KEY
+├── user_id → User          NOT NULL          -- 操作用户
+├── base_id → Base?                           -- 关联 Base（如有）
+├── article_id → Article?                     -- 关联文章（如有）
+├── action_type             VARCHAR NOT NULL  -- 操作类型
+│                           -- "article_published"
+│                           -- "article_updated"
+│                           -- "article_deleted"
+│                           -- "base_created"
+│                           -- "base_updated"
+│                           -- "base_deleted"
+│                           -- "injection_made"
+│                           -- "external_ref_added"
+│                           -- "session_distilled"
+├── metadata                JSONB DEFAULT '{}'
+│   └─ {
+│       "article_title": "...",
+│       "base_name": "...",
+│       "injected_from": ["uuid1", "uuid2"],
+│       "content_length": 3200
+│     }
+├── created_at             TIMESTAMPTZ NOT NULL
+│
+INDEX(user_id, created_at)       -- 用户按时间线查询
+INDEX(base_id, action_type)       -- Base 维度的统计分析
+INDEX(action_type, created_at)    -- 全局活动聚合
+```
+
+### 3.7 完整 ER 关系
 
 ```
 User ──1:N── BaseMember ──N:1── Base
@@ -252,6 +284,9 @@ User ──1:N── BaseMember ──N:1── Base
                                    └── 1:N ── InjectionEdge (as derived)
                                                    │
                                                    └── N:1 ── Article (as source)
+
+User ──1:N── Activity
+Base ──1:N── Activity
 ```
 
 ---
