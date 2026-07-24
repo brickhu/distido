@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ReservedSlugs",
+  "description": "distito.com 保留路径的 schema",
+  "type": "object",
+  "required": ["reserved", "patterns"],
+  "properties": {
+    "reserved": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slug", "type", "description"],
+        "properties": {
+          "slug":    { "type": "string", "description": "保留的 slug" },
+          "type":    { "type": "string", "enum": ["page", "legal", "system", "pattern", "redirect"] },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "patterns": {
+      "type": "object",
+      "properties": {
+        "prefixes": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "./reserved-slugs.schema.json",
+  "description": "distito.com 下保留的二级路径，不可用作 base-slug",
+  "reserved": [
+    { "slug": "about",     "type": "page",    "description": "关于 distito" },
+    { "slug": "explore",   "type": "page",    "description": "发现页 — 浏览公开文章" },
+    { "slug": "pricing",   "type": "page",    "description": "定价页（预留）" },
+    { "slug": "blog",      "type": "page",    "description": "distito 官方博客（预留）" },
+    { "slug": "help",      "type": "page",    "description": "帮助中心（预留）" },
+    { "slug": "docs",      "type": "page",    "description": "文档（预留）" },
+    { "slug": "terms",     "type": "legal",   "description": "服务条款" },
+    { "slug": "privacy",   "type": "legal",   "description": "隐私政策" },
+    { "slug": "status",    "type": "system",  "description": "服务状态" },
+    { "slug": "sitemap",   "type": "system",  "description": "站点地图" },
+    { "slug": "feed",      "type": "system",  "description": "RSS/Atom Feed" },
+    { "slug": "_",         "type": "pattern", "description": "下划线前缀保留，如 /_assets/..." },
+    { "slug": "app",       "type": "redirect","description": "重定向到 app.distito.com（预留）" },
+    { "slug": "api",       "type": "redirect","description": "重定向到 api.distito.com（预留）" },
+    { "slug": "admin",     "type": "redirect","description": "管理后台入口（预留）" }
+  ],
+  "patterns": {
+    "description": "以这些前缀开头的路径均保留",
+    "prefixes": ["_", "."]
+  }
+}

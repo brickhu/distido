@@ -1,0 +1,13 @@
+# distito 运维配置
+# Cloudflare Pages — app.distito.com（管理后台 SPA）
+# 构建输出: webapp/dist/
+
+name = "app-distito-com"
+pages_build_output_dir = "webapp/dist"
+build_command = "cd webapp && npm run build"
+
+[env.production]
+env = { VITE_API_BASE = "https://api.distito.com" }
+
+[env.preview]
+env = { VITE_API_BASE = "https://api.distito.com" }

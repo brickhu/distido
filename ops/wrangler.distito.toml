@@ -1,0 +1,19 @@
+# distito 运维配置
+# Cloudflare Pages — distito.com（公开站点）
+# 构建输出: builder/dist/
+
+name = "distito-com"
+pages_build_output_dir = "builder/dist"
+build_command = "cd builder && python -m builder.site_builder"
+
+# 生产环境
+[env.production]
+# 构建时 builder 需要用 API 拉取数据
+env = { API_BASE = "https://api.distito.com" }
+
+# 预览环境（PR preview）
+[env.preview]
+env = { API_BASE = "https://api.distito.com" }
+
+# Webhook: 发布文章时触发重建
+# Cloudflare Dashboard → Pages → distito-com → Settings → Builds → Deploy webhook
