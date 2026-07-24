@@ -96,7 +96,8 @@ Base
 │       "distillation": {
 │           "who_can_publish": "owner",      -- "owner" | "members" | "anyone"
 │           "require_approval": true,         -- 是否需要审核
-│           "max_content_length": 5000        -- 文章最大字数上限
+│           "max_content_length": 5000,        -- 文章最大字数上限
+│           "daily_publish_limit": 5           -- 每 24 小时最多发布篇数
 │       },
 │       "management": {
 │           "who_can_admin": "owner"          -- "owner" | "admins"
@@ -670,13 +671,19 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
    │   · CI/CD 核心原理 — Alice              │
    │   · 生产环境部署实践 — Bob              │
    │                                         │
+   │ ⚠️ 今日已发布 4 篇，剩 1 篇（限额 5/天） │
+   │                                         │
    │ ├─ 回复「确认」立即发布                  │
    │ └─ 直接提修改意见                        │
    └─────────────────────────────────────────┘
 
          ↓
-⑤ 用户确认 → 发布
-   ├─ 创建 Article（含 base_id / injections / injection_notes）
+⑤ 后端校验
+   ├─ 检查该 Base 今日已发布篇数
+   ├─ 超过 `daily_publish_limit`? → 返回限额错误
+   │     "❌ 发布失败：技术博客今日已发布 5 篇，
+   │      达到每日上限（5 篇/24h），请明天再发布。"
+   └─ 未超限 → 创建 Article（含 base_id / injections / injection_notes）
    ├─ 写入 InjectionEdge
    ├─ 递增 injected_count
    └─ 返回发布成功
@@ -791,6 +798,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 - 有 injections 字段的标记为 inject 类型并记录引用关系
 - 外部 URL 无 distito+json 则标记为 reference 类型
 - 不要将参考知识与你的回答混淆
+- 发布前提醒用户今日剩余可发布篇数（如 "今日已发布 3 篇，剩余 2 篇"）
 ```
 
 #### 内容提取与结构化
