@@ -1,6 +1,6 @@
 # distito — 基于 AI 会话的知识协作网络
 
-> **Publish your thinking from your AI conversations. Build a knowledge network from AI conversations without context boundaries.**
+> **Share your knowledge from AI conversations. Build a knowledge network without context boundaries.**
 
 ---
 
@@ -120,7 +120,7 @@
 域名：    distito.com ✅ 可注册
 Logo：    =>
 定位：    基于 AI 会话的知识协作网络
-一句话：  Build a knowledge network from AI conversations without context boundaries.
+一句话：  Build a knowledge network without context boundaries.
 ```
 
 ### 品牌名来源

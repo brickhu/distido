@@ -2,7 +2,7 @@
 
 > **A Knowledge Collaboration Network Based on AI Conversations.**
 
-Publish your thinking from your conversations. Build a knowledge network from AI conversations without context boundaries.
+Share your knowledge from AI conversations. Build a knowledge network without context boundaries.
 
 ---
 
