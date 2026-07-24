@@ -95,7 +95,8 @@ Base
 │   └─ {
 │       "distillation": {
 │           "who_can_publish": "owner",      -- "owner" | "members" | "anyone"
-│           "require_approval": true          -- 是否需要审核
+│           "require_approval": true,         -- 是否需要审核
+│           "max_content_length": 5000        -- 文章最大字数上限
 │       },
 │       "management": {
 │           "who_can_admin": "owner"          -- "owner" | "admins"
@@ -171,6 +172,8 @@ Article
 ├── published_at           TIMESTAMPTZ
 ├── created_at             TIMESTAMPTZ NOT NULL
 └── updated_at             TIMESTAMPTZ NOT NULL
+│
+CHECK(length(content) <= 5000)          -- 免费用户上限 5000 字
 
 INDEX(session_id)            -- 按会话查询所有生成的文章
 INDEX(agent_id)              -- 按代理筛选
