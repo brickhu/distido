@@ -48,24 +48,28 @@ Base 是知识的集合容器，类似 GitHub 的仓库 / Medium 的出版物。
 ### 2.2 URL 结构
 
 ```
-distito.com/<base-slug>/<article-slug>
+distito.com/<user-slug>/<base-slug>/<article-slug>
 
 示例：
-  distito.com/tech/ci-cd-core-principles
-  distito.com/thoughts/ai-conversation-insights
-  distito.com/life-notes/2026-summer
+  distito.com/alice/tech/ci-cd-core-principles
+  distito.com/alice/thoughts/ai-insights
+  distito.com/bob/life-notes/2026-summer
 ```
 
 | 层级 | 说明 |
 |------|------|
-| `base-slug` | Base 的全局唯一标识，作为 URL 一级路径 |
-| `article-slug` | 文章在 Base 内的唯一 slug |
+| `user-slug` | 用户唯一标识，如 `alice`、`bob` |
+| `base-slug` | Base 在用户下的唯一标识，如 `tech`、`thoughts` |
+| `article-slug` | 文章在 Base 内的唯一标识 |
+| **访问用户主页** | `distito.com/<user-slug>` — 展示用户所有公开 Base |
+| **访问 Base** | `distito.com/<user-slug>/<base-slug>` — Base 首页 |
+| **访问文章** | `distito.com/<user-slug>/<base-slug>/<article-slug>` — 文章页 |
 
 **引用语法**：
 ```
-=> http://distito.com/tech/ci-cd-core-principles
-=> http://distito.com/thoughts/ai-conversation-insights
-=> http://distito.com/tech/ci-cd-core-principles http://distito.com/devops/production-practice
+=> http://distito.com/alice/tech/ci-cd-core-principles
+=> http://distito.com/alice/thoughts/ai-insights
+=> http://distito.com/alice/tech/ci-cd-core-principles http://distito.com/bob/devops/production-practice
 ```
 
 ### 2.3 Base 的核心属性
@@ -86,10 +90,11 @@ distito.com/<base-slug>/<article-slug>
 ```sql
 Base
 ├── id                      UUID PRIMARY KEY
-├── slug                    VARCHAR UNIQUE NOT NULL  -- 全局唯一，URL 标识
-├── name                    VARCHAR NOT NULL          -- 显示名称
-├── description             TEXT?                     -- 简介
-├── logo                    TEXT?                     -- Base 图标/Logo URL
+├── user_id → User          NOT NULL             -- 所有者
+├── slug                    VARCHAR NOT NULL      -- 用户内唯一
+├── name                    VARCHAR NOT NULL      -- 显示名称
+├── description             TEXT?                 -- 简介
+├── logo                    TEXT?                 -- Base 图标/Logo URL
 │
 ├── settings                JSONB NOT NULL DEFAULT '{}'
 │   └─ {
@@ -106,9 +111,27 @@ Base
 │
 ├── created_at              TIMESTAMPTZ NOT NULL
 └── updated_at              TIMESTAMPTZ NOT NULL
+│
+UNIQUE(user_id, slug)                              -- 用户内 base slug 唯一
 ```
 
-### 3.2 BaseMember（用户-Base 关系表）
+### 3.2 User
+
+```sql
+User
+├── id                      UUID PRIMARY KEY
+├── slug                    VARCHAR UNIQUE NOT NULL  -- 用户唯一标识（distito.com/<slug>）
+├── email                   VARCHAR?
+├── github_id               VARCHAR?
+├── display_name            VARCHAR NOT NULL
+├── avatar_url              TEXT?
+├── created_at             TIMESTAMPTZ NOT NULL
+└── updated_at             TIMESTAMPTZ NOT NULL
+│
+UNIQUE(slug)
+```
+
+### 3.3 BaseMember（用户-Base 关系表）
 
 ```sql
 BaseMember
@@ -128,7 +151,7 @@ UNIQUE(base_id, user_id)
 
 **关键设计**：Base 的可见性是公开的，所以 `viewer` 角色是所有已登录用户的隐式默认角色。显式写入 `BaseMember` 的角色是 `owner` / `admin` / `contributor`。
 
-### 3.3 Article（扩展 inject 字段）
+### 3.4 Article（扩展 inject 字段）
 
 ```sql
 Article
@@ -174,6 +197,7 @@ Article
 ├── created_at             TIMESTAMPTZ NOT NULL
 └── updated_at             TIMESTAMPTZ NOT NULL
 │
+UNIQUE(base_id, slug)                              -- Base 内文章 slug 唯一
 CHECK(length(content) <= 5000)          -- 免费用户上限 5000 字
 
 INDEX(session_id)            -- 按会话查询所有生成的文章
@@ -192,7 +216,7 @@ INDEX(model_id)              -- 按模型筛选
 - 某次对话蒸馏出的所有文章
 - 某个 AI 代理（如 Kun）蒸馏的所有文章
 
-### 3.4 InjectionEdge（引用关系边表）
+### 3.5 InjectionEdge（引用关系边表）
 
 ```sql
 InjectionEdge
@@ -208,7 +232,7 @@ INDEX(derived_article_id)    -- 查某篇文章引用了谁
 INDEX(source_article_id)     -- 查某篇文章被谁引用
 ```
 
-### 3.5 SessionCitation（运行时模型，不入库）
+### 3.6 SessionCitation（运行时模型，不入库）
 
 在 Kun Loop / API 会话上下文中维护，用于追踪当前对话引用了哪些知识：
 
@@ -237,7 +261,7 @@ SessionCitation
 - 用户确认发布后，一次性 POST 到 API 持久化
 - 用户发布后，当前对话可继续用于新的蒸馏（前文作为上下文参考）
 
-### 3.6 Activity（用户行为日志）
+### 3.7 Activity（用户行为日志）
 
 ```sql
 Activity
@@ -269,7 +293,7 @@ INDEX(base_id, action_type)       -- Base 维度的统计分析
 INDEX(action_type, created_at)    -- 全局活动聚合
 ```
 
-### 3.7 完整 ER 关系
+### 3.8 完整 ER 关系
 
 ```
 User ──1:N── BaseMember ──N:1── Base
@@ -1006,7 +1030,7 @@ distito.com/tech/ci-cd-core-principles
 
 | 决策 | 选项 | 选择 | 理由 |
 |------|------|------|------|
-| URL 结构 | 含用户名 vs 不含 | **`base-slug/article-slug`** | 未来多用户协作一个 Base 时 URL 不变，更稳定 |
+| URL 结构 | 含用户名 vs 不含 | **`user-slug/base-slug/article-slug`** | 用户命名空间更直观，类似 GitHub `user/repo` 结构 |
 | Base 用户关系 | 独立表 vs 用户字段 | **BaseMember 独立表** | 灵活支持未来多用户协同 |
 | 文章-Base 关系 | 多对多 vs 一对多 | **一对多（属于一个 Base）** | 简单清晰，每个 Base 有独立知识体系 |
 | 注入方式 | 直接塞入 vs 参考资料包装 | **参考资料包装** | 明确语义，给模型正确的上下文指引 |

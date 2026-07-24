@@ -519,10 +519,12 @@ website/        ───→ 调 api.distito.com 展示知识聚合
 
 ### 9.1 背景
 
-`distito.com/<base-slug>/<article-slug>` 格式中，`<base-slug>` 是一级路径。
-某些路径必须预留，不可被用户注册为 base-slug。
+`distito.com/<user-slug>/<base-slug>/<article-slug>` 格式中，`<user-slug>` 是一级路径。
+某些路径必须预留，不可被用户注册为 user-slug。
 
 ### 9.2 保留路径列表
+
+所有官网 SPA 路由路径均不可用作 user-slug：
 
 | 路径 | 用途 |
 |------|------|
@@ -543,42 +545,58 @@ website/        ───→ 调 api.distito.com 展示知识聚合
 | `distito.com/_*` | `_` 下划线前缀全部保留（内部路由） |
 | `distito.com/*` | **≤ 3 字符的路径全部保留（如 `/cn`、`/js`、`/go`）** |
 
-### 9.3 Base slug 长度限制
+### 9.3 Slug 长度规则
 
-| 规则 | 值 | 理由 |
-|------|-----|------|
-| 最小长度 | **4 字符** | 3 字符以内路径全部保留，用于 SPA 路由或未来扩展 |
-| 最大长度 | 32 字符 | 合理范围 |
-| 字段名 | 英文小写字母、数字、连字符 | SEO 友好 |
+| 层级 | 字段 | 最小长度 | 说明 |
+|------|------|---------|------|
+| user-slug | `User.slug` | **4 字符** | 3 字符以内归官网 SPA 路由 |
+| base-slug | `Base.slug` | **1 字符** | 在用户命名空间下，不受保留路径限制 |
+| article-slug | `Article.slug` | **1 字符** | 在 Base 命名空间下，不受限制 |
 
 ### 9.4 校验规则
 
-创建 Base 时，`slug` 字段必须通过以下校验：
+**user-slug 校验（注册时）：**
 
 ```python
-# fastapi/app/services/base_service.py
+# api/functions/auth.ts
 
 RESERVED = json.load(open("reserved-slugs.json"))
 reserved_slugs = {item["slug"] for item in RESERVED["reserved"]}
 reserved_prefixes = tuple(RESERVED["patterns"]["prefixes"])
 
-def validate_base_slug(slug: str):
+def validate_user_slug(slug: str):
     if slug in reserved_slugs:
-        raise ValueError(f"'{slug}' 是保留路径，不可用作 Base")
+        raise ValueError(f"'{slug}' 是保留路径，不可注册为用户标识")
     if slug.startswith(reserved_prefixes):
-        raise ValueError(f"'{slug[0]}' 前缀保留，不可用作 Base")
+        raise ValueError(f"'{slug[0]}' 前缀保留，不可注册")
     if len(slug) < 4:
-        raise ValueError("Base slug 至少 4 个字符（3 字符以内保留）")
+        raise ValueError("用户标识至少 4 个字符（3 字符以内保留）")
+    if len(slug) > 32:
+        raise ValueError("用户标识最多 32 个字符")
+    if not re.match(r'^[a-z0-9]([a-z0-9-]*[a-z0-9])?$', slug):
+        raise ValueError("用户标识只允许小写字母、数字和连字符")
+```
+
+**base-slug 校验（创建 Base 时）：**
+
+```python
+# api/functions/bases.ts
+
+def validate_base_slug(slug: str):
+    if len(slug) < 1:
+        raise ValueError("Base slug 至少 1 个字符")
     if len(slug) > 32:
         raise ValueError("Base slug 最多 32 个字符")
-    # 字母数字 + 连字符
     if not re.match(r'^[a-z0-9]([a-z0-9-]*[a-z0-9])?$', slug):
         raise ValueError("Base slug 只允许小写字母、数字和连字符")
 ```
 
-`reserved-slugs.json` 同时被 builder 和 fastapi 引用，确保两端校验一致。
+`reserved-slugs.json` 同时被 builder 和 api 引用，确保两端校验一致。
 
-**简化理解**：`distito.com` 上，3 字符以内的路径归官网 SPA，4 字符以上开放为 base-slug。这意味着 `reserved-slugs.json` 只需登记 > 3 字符的保留路径（如 `about`、`explore`），而 `cn`、`en`、`zh`、`js`、`go` 等 2-3 字符路径天然受长度限制保护。
+**简化理解**：`distito.com` 上，3 字符以内的路径归官网 SPA，4 字符以上开放为 user-slug。
+base-slug 在用户命名空间下（`distito.com/alice/tech`），不受保留路径限制。
+这意味着 `reserved-slugs.json` 只需登记 > 3 字符的保留路径（如 `about`、`explore`），
+而 `cn`、`en`、`zh`、`js`、`go` 等 2-3 字符路径天然受长度限制保护。
 
 ---
 
@@ -967,8 +985,9 @@ async def remove_mapping(domain, mount_type, mount_point):
 | website 与 builder 关系 | **独立，不重叠** | website 是 SPA 通过 API 取数据；builder 只生成静态文章页 |
 | Webhook 触发构建 | **发布时实时触发** | 零成本（免费额度内），用户无等待 |
 | 域名分离 | **distito.com + app.distito.com** | 内容站和管理站关注点分离，SEO 不受登录态干扰 |
-| URL 格式 | **`base-slug/article-slug`** | 见 injection-design.md，为未来多用户协作预留 |
-| Base slug 最小长度 | **4 字符** | 3 字符以内归官网 SPA 路由，天然保护 |
+| URL 格式 | **`user-slug/base-slug/article-slug`** | 用户命名空间，GitHub 式结构 |
+| user-slug 最小长度 | **4 字符** | 3 字符以内归官网 SPA 路由，天然保护 |
+| base-slug 最小长度 | **1 字符** | 在用户命名空间下，不受保留路径限制 |
 | 保留路径 | **配置文件管理** | `reserved-slugs.json` 被 builder + fastapi 共用校验 |
 | 自定义域名模型 | **通用 URL 重写表** | `rewrite_prefix` 不限定为 Base，支持任意路径 |
 | 根路径 `/` | **精确匹配，后缀不拼接** | 防止 `/` 错误匹配所有子路径 |
