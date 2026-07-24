@@ -140,8 +140,9 @@ Article
 ├── content                 TEXT NOT NULL     -- 正文（Markdown）
 ├── excerpt                 TEXT?             -- 摘要 / 引言
 │
-├── injections             UUID[] DEFAULT '{}'  -- 本文衍生自哪些文章 ID
-├── injected_count            INTEGER DEFAULT 0    -- 被多少篇文章衍生引用
+├── injections             UUID[] DEFAULT '{}'  -- 本文注入了哪些 distito 文章 ID（计入注入网络）
+├── external_refs          TEXT[] DEFAULT '{}'  -- 本文引用了哪些外部 URL（结构化后注入，不计入网络）
+├── injected_count         INTEGER DEFAULT 0    -- 被多少篇文章注入引用
 │
 ├── related_to             UUID[] DEFAULT '{}'  -- 同一次会话中产生的关联文章
 ├── session_id             UUID?             -- 来源对话的会话 ID
@@ -344,6 +345,9 @@ GET    /api/models/:modelId/articles                              — 某个模�
   "excerpt": "从 CI/CD 到持续部署的延伸思考",
   "injections": [
     "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  ],
+  "external_refs": [
+    "https://example.com/event-loop"
   ],
   "related_to": [
     "x9y8z7..."
