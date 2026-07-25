@@ -1,6 +1,6 @@
 # distito — 基于 AI 会话的知识协作网络
 
-> **Distill what you learn in AI conversations. Build a knowledge network without context boundaries.**
+> **Distill & share what you learn from AI conversations. Build a knowledge network without context boundaries.**
 
 ---
 

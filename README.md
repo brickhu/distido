@@ -2,7 +2,7 @@
 
 > **A Knowledge Collaboration Network Based on AI Conversations.**
 
-Distill what you learn in AI conversations. Build a knowledge network without context boundaries.
+Distill & share what you learn from AI conversations. Build a knowledge network without context boundaries.
 
 ---
 
