@@ -170,6 +170,12 @@ Article
 ├── injected_count         INTEGER DEFAULT 0    -- 被多少篇文章注入引用
 │
 ├── related_to             UUID[] DEFAULT '{}'  -- 同一次会话中产生的关联文章
+├── context                JSONB DEFAULT '{}' -- 知识产生的背景
+│   └─ {
+│       "project": "distito",             -- 关联的项目/产品
+│       "intent": "design",               -- 对话意图：design / decision / learn / create / explore
+│       "summary": "围绕 distito 的 URL 结构调整、Hub 概念和注入流程的设计讨论"
+│     }
 ├── session_id             UUID?             -- 来源对话的会话 ID
 ├── agent_id               VARCHAR?          -- 蒸馏本文的 AI 代理标识，如 "kun"
 ├── model_id               VARCHAR?          -- 使用的模型标识，如 "gpt-4o"、"deepseek-v4-pro"
@@ -548,6 +554,7 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 | `title` | 是 | 标题 |
 | `author` | 是 | 作者信息（slug / display_name） |
 | `base` | 是 | 所属 Base（slug / name） |
+| `context` | 否 | 知识创作背景：`{ project, intent, summary }` |
 | `published_at` | 是 | 发布时间 |
 | `created_at` | 是 | 知识在对话中被蒸馏出来的时间 |
 | `conversation_date` | 否 | 对话发生的月份范围，如 `2026-07` |
