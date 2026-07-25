@@ -216,7 +216,39 @@ INDEX(model_id)              -- 按模型筛选
 - 某次对话蒸馏出的所有文章
 - 某个 AI 代理（如 Kun）蒸馏的所有文章
 
-### 3.5 InjectionEdge（引用关系边表）
+### 3.5 Collection（知识清单）
+
+用户可创建清单来组织和推荐文章。文章不属于清单，清单不参与 URL 路径。
+
+```sql
+Collection
+├── id                      UUID PRIMARY KEY
+├── user_id → User          NOT NULL
+├── name                    VARCHAR NOT NULL           -- 清单名称
+├── description             TEXT?                      -- 简介
+├── slug                    VARCHAR?                    -- 可选，用于唯一URL标识
+├── visibility              VARCHAR DEFAULT 'public'    -- public | private
+├── created_at             TIMESTAMPTZ NOT NULL
+└── updated_at             TIMESTAMPTZ NOT NULL
+
+UNIQUE(user_id, slug)
+
+CollectionArticle
+├── id                      UUID PRIMARY KEY
+├── collection_id → Collection  NOT NULL
+├── article_id → Article       NOT NULL
+├── position                INTEGER DEFAULT 0
+├── note                    TEXT?                        -- 收录说明
+├── added_at               TIMESTAMPTZ NOT NULL
+│
+UNIQUE(collection_id, article_id)
+INDEX(user_id)               -- 查用户的清单
+INDEX(article_id)             -- 查某篇文章被收录到哪些清单
+```
+
+访问入口：`distito.com/@<user-slug>?list=<slug>`
+
+### 3.6 InjectionEdge（引用关系边表）
 
 ```sql
 InjectionEdge
@@ -232,7 +264,7 @@ INDEX(derived_article_id)    -- 查某篇文章引用了谁
 INDEX(source_article_id)     -- 查某篇文章被谁引用
 ```
 
-### 3.6 SessionCitation（运行时模型，不入库）
+### 3.7 SessionCitation（运行时模型，不入库）
 
 在 Kun Loop / API 会话上下文中维护，用于追踪当前对话引用了哪些知识：
 
@@ -261,7 +293,7 @@ SessionCitation
 - 用户确认发布后，一次性 POST 到 API 持久化
 - 用户发布后，当前对话可继续用于新的蒸馏（前文作为上下文参考）
 
-### 3.7 Activity（用户行为日志）
+### 3.8 Activity（用户行为日志）
 
 ```sql
 Activity
@@ -293,7 +325,7 @@ INDEX(base_id, action_type)       -- Base 维度的统计分析
 INDEX(action_type, created_at)    -- 全局活动聚合
 ```
 
-### 3.8 完整 ER 关系
+### 3.9 完整 ER 关系
 
 ```
 User ──1:N── BaseMember ──N:1── Base
