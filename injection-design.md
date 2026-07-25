@@ -17,7 +17,7 @@
 
 | GitHub Fork | distito Inject |
 |---|---|
-| Fork 一个仓库 | 引用一篇文章到对话上下文 |
+| Fork 一个仓库 | 引用一个知识点到对话上下文 |
 | 在 Fork 上做修改 | 结合参考资料继续对话、思考 |
 | 提交 PR / 发布 Release | 蒸馏发布新文章 |
 | Fork 关系追溯 | `injections` 元数据字段 |
@@ -43,7 +43,7 @@
 
 ### 2.1 什么是 Base
 
-Base 是知识的集合容器，类似 GitHub 的仓库 / Medium 的出版物。每篇文章必须属于且只属于一个 Base。
+Base 是知识的集合容器，类似 GitHub 的仓库 / Medium 的出版物。每篇文章必须属于且只归属一个 Base。
 
 ### 2.2 URL 结构
 
@@ -63,7 +63,7 @@ distito.com/*<hub-slug>                           ← Hub 聚合入口
 | `*<hub-slug>` | Hub 聚合入口标识，如 `*react-deep-dives` |
 | `article-slug` | 文章在用户下的唯一标识 |
 | **访问用户主页** | `distito.com/@<user-slug>` — 展示用户所有文章 |
-| **访问文章** | `distito.com/@<user-slug>/<article-slug>` — 文章页 |
+| **访问文章** | `distito.com/@<user-slug>/<article-slug>` — 知识点页 |
 | **访问 Hub** | `distito.com/*<hub-slug>` — Hub 聚合页，引导跳转到原文 |
 
 **引用语法**：
@@ -151,10 +151,10 @@ UNIQUE(base_id, user_id)
 
 **关键设计**：Base 的可见性是公开的，所以 `viewer` 角色是所有已登录用户的隐式默认角色。显式写入 `BaseMember` 的角色是 `owner` / `admin` / `contributor`。
 
-### 3.4 Article（扩展 inject 字段）
+### 3.4 KnowledgePoint（知识点）
 
 ```sql
-Article
+KnowledgePoint
 ├── id                      UUID PRIMARY KEY
 ├── base_id → Base          NOT NULL       -- 隶属于的 Base
 ├── user_id → User          NOT NULL       -- 作者
@@ -165,8 +165,8 @@ Article
 ├── content                 TEXT NOT NULL     -- 正文（Markdown）
 ├── excerpt                 TEXT?             -- 摘要 / 引言
 │
-├── injections             UUID[] DEFAULT '{}'  -- 本文注入了哪些 distito 文章 ID（计入注入网络）
-├── external_refs          TEXT[] DEFAULT '{}'  -- 本文引用了哪些外部 URL（结构化后注入，不计入网络）
+├── injections             UUID[] DEFAULT '{}'  -- 本知识点注入了哪些 distito 文章 ID（计入注入网络）
+├── external_refs          TEXT[] DEFAULT '{}'  -- 本知识点引用了哪些外部 URL（结构化后注入，不计入网络）
 ├── injected_count         INTEGER DEFAULT 0    -- 被多少篇文章注入引用
 │
 ├── related_to             UUID[] DEFAULT '{}'  -- 同一次会话中产生的关联文章
@@ -177,7 +177,7 @@ Article
 │       "summary": "围绕 distito 的 URL 结构调整、Hub 概念和注入流程的设计讨论"
 │     }
 ├── session_id             UUID?             -- 来源对话的会话 ID
-├── agent_id               VARCHAR?          -- 蒸馏本文的 AI 代理标识，如 "kun"
+├── agent_id               VARCHAR?          -- 蒸馏本知识点的 AI 代理标识，如 "kun"
 ├── model_id               VARCHAR?          -- 使用的模型标识，如 "gpt-4o"、"deepseek-v4-pro"
 ├── session_meta           JSONB DEFAULT '{}' -- 来源会话的全部元数据
 │   └─ {
@@ -243,7 +243,7 @@ UNIQUE(user_id, slug)
 CollectionArticle
 ├── id                      UUID PRIMARY KEY
 ├── collection_id → Collection  NOT NULL
-├── article_id → Article       NOT NULL
+├── article_id → KnowledgePoint       NOT NULL
 ├── position                INTEGER DEFAULT 0
 ├── note                    TEXT?                        -- 收录说明
 ├── added_at               TIMESTAMPTZ NOT NULL
@@ -260,8 +260,8 @@ INDEX(article_id)             -- 查某篇文章被收录到哪些清单
 ```sql
 InjectionEdge
 ├── id                      UUID PRIMARY KEY
-├── source_article_id → Article     NOT NULL  -- 被引用的文章（upstream）
-├── derived_article_id → Article    NOT NULL  -- 衍生出的文章（fork）
+├── source_article_id → KnowledgePoint     NOT NULL  -- 被引用的文章（upstream）
+├── derived_article_id → KnowledgePoint    NOT NULL  -- 衍生出的文章（fork）
 ├── position                INTEGER NOT NULL DEFAULT 0  -- 多篇引用时的排序
 ├── note                    TEXT?             -- 用户引用时写的补充说明
 ├── created_at             TIMESTAMPTZ NOT NULL
@@ -307,7 +307,7 @@ Activity
 ├── id                      UUID PRIMARY KEY
 ├── user_id → User          NOT NULL          -- 操作用户
 ├── base_id → Base?                           -- 关联 Base（如有）
-├── article_id → Article?                     -- 关联文章（如有）
+├── article_id → KnowledgePoint?                     -- 关联文章（如有）
 ├── action_type             VARCHAR NOT NULL  -- 操作类型
 │                           -- "article_published"
 │                           -- "article_updated"
@@ -520,7 +520,7 @@ GET /api/articles/:articleId/injection-graph?depth=2
 
 ### 5.2 application/distito+json 标准
 
-distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent 在 `=>` 注入时识别。
+distito 生成的每个公开知识点页都内嵌一个 JSON-LD 块，供 Agent 在 `=>` 注入时识别。
 
 ```html
 <script type="application/distito+json">
@@ -787,7 +787,7 @@ Agent：本次对话涉及以下几个方向，你想写哪篇？
    │                                         │
    │ 正文...                                 │
    │                                         │
-   │ 🔗 本文衍生自：                         │
+   │ 🔗 本知识点衍生自：                         │
    │   · CI/CD 核心原理 — Alice              │
    │   · 生产环境部署实践 — Bob              │
    │                                         │
@@ -1105,7 +1105,7 @@ distito.com/tech
 └──────────────────────────────────────┘
 ```
 
-### 8.2 文章页 Inject 区块
+### 8.2 知识点页 Inject 区块
 
 ```
 distito.com/tech/ci-cd-core-principles
@@ -1117,7 +1117,7 @@ distito.com/tech/ci-cd-core-principles
 │  正文...                                 │
 │                                          │
 │  ──────────────────────────────────────  │
-│  🔗 本文衍生自                           │
+│  🔗 本知识点衍生自                           │
 │    → DevOps 入门 (charlie/devops)        │
 │                                          │
 │  ──────────────────────────────────────  │
@@ -1138,7 +1138,7 @@ distito.com/tech/ci-cd-core-principles
 |------|------|------|------|
 | URL 结构 | 含用户名 vs 不含 | **`user-slug/base-slug/article-slug`** | 用户命名空间更直观，类似 GitHub `user/repo` 结构 |
 | Base 用户关系 | 独立表 vs 用户字段 | **BaseMember 独立表** | 灵活支持未来多用户协同 |
-| 文章-Base 关系 | 多对多 vs 一对多 | **一对多（属于一个 Base）** | 简单清晰，每个 Base 有独立知识体系 |
+| 文章-Base 关系 | 多对多 vs 一对多 | **一对多（归属一个 Base）** | 简单清晰，每个 Base 有独立知识体系 |
 | 注入方式 | 直接塞入 vs 参考资料包装 | **参考资料包装** | 明确语义，给模型正确的上下文指引 |
 | 引用上限 | 固定 vs 弹性 | **≤ 5 篇/次** | 平衡上下文窗口和引用质量 |
 | 循环引用检测 | 必要 vs 非必要 | **必要** | A → B 后 B → A 无意义，需阻断 |
