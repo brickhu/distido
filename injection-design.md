@@ -48,28 +48,28 @@ Base 是知识的集合容器，类似 GitHub 的仓库 / Medium 的出版物。
 ### 2.2 URL 结构
 
 ```
-distito.com/<user-slug>/<base-slug>/<article-slug>
+distito.com/@<user-slug>/<article-slug>          ← 个人空间（文章所属）
+distito.com/*<hub-slug>                           ← Hub 聚合入口
 
 示例：
-  distito.com/alice/tech/ci-cd-core-principles
-  distito.com/alice/thoughts/ai-insights
-  distito.com/bob/life-notes/2026-summer
+  distito.com/@alice/react-hooks-guide              ← 个人文章
+  distito.com/*react-deep-dives                     ← Hub 首页
+                      （聚合视图，点击跳转到 @bob/react-19-features 等原文）
 ```
 
 | 层级 | 说明 |
 |------|------|
-| `user-slug` | 用户唯一标识，如 `alice`、`bob` |
-| `base-slug` | Base 在用户下的唯一标识，如 `tech`、`thoughts` |
-| `article-slug` | 文章在 Base 内的唯一标识 |
-| **访问用户主页** | `distito.com/<user-slug>` — 展示用户所有公开 Base |
-| **访问 Base** | `distito.com/<user-slug>/<base-slug>` — Base 首页 |
-| **访问文章** | `distito.com/<user-slug>/<base-slug>/<article-slug>` — 文章页 |
+| `@<user-slug>` | 用户空间标识，如 `@alice`、`@bob` |
+| `*<hub-slug>` | Hub 聚合入口标识，如 `*react-deep-dives` |
+| `article-slug` | 文章在用户下的唯一标识 |
+| **访问用户主页** | `distito.com/@<user-slug>` — 展示用户所有文章 |
+| **访问文章** | `distito.com/@<user-slug>/<article-slug>` — 文章页 |
+| **访问 Hub** | `distito.com/*<hub-slug>` — Hub 聚合页，引导跳转到原文 |
 
 **引用语法**：
 ```
-=> http://distito.com/alice/tech/ci-cd-core-principles
-=> http://distito.com/alice/thoughts/ai-insights
-=> http://distito.com/alice/tech/ci-cd-core-principles http://distito.com/bob/devops/production-practice
+=> http://distito.com/@alice/react-hooks-guide
+=> http://distito.com/@alice/react-hooks-guide http://distito.com/@bob/devops-101
 ```
 
 ### 2.3 Base 的核心属性
@@ -160,8 +160,8 @@ Article
 ├── user_id → User          NOT NULL       -- 作者
 │
 ├── title                   VARCHAR NOT NULL
-├── slug                    VARCHAR NOT NULL  -- Base 内唯一
-│                             UNIQUE(base_id, slug)
+├── slug                    VARCHAR NOT NULL  -- 用户内唯一
+│                             UNIQUE(user_id, slug)
 ├── content                 TEXT NOT NULL     -- 正文（Markdown）
 ├── excerpt                 TEXT?             -- 摘要 / 引言
 │

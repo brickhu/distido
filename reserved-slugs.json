@@ -1,6 +1,6 @@
 {
   "$schema": "./reserved-slugs.schema.json",
-  "description": "distito.com 下保留的二级路径，不可用作 base-slug",
+  "description": "distito.com 下保留的一级路径和前缀，不可用作 user-slug/hub-slug",
   "reserved": [
     { "slug": "about",     "type": "page",    "description": "关于 distito" },
     { "slug": "explore",   "type": "page",    "description": "发现页 — 浏览公开文章" },
@@ -20,6 +20,6 @@
   ],
   "patterns": {
     "description": "以这些前缀开头的路径均保留",
-    "prefixes": ["_", "."]
+    "prefixes": ["_", ".", "@", "*"]
   }
 }
