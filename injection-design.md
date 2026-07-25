@@ -173,7 +173,7 @@ Article
 ├── context                JSONB DEFAULT '{}' -- 知识产生的背景
 │   └─ {
 │       "project": "distito",             -- 关联的项目/产品
-│       "intent": "design",               -- 对话意图：design / decision / learn / create / explore
+│       "intent": ["design", "decision"],      -- 对话意图列表：design / decision / learn / create / explore
 │       "summary": "围绕 distito 的 URL 结构调整、Hub 概念和注入流程的设计讨论"
 │     }
 ├── session_id             UUID?             -- 来源对话的会话 ID
