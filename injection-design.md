@@ -180,7 +180,8 @@ Article
 │       "title": "对话标题",
 │       "message_count": 12,
 │       "total_tokens": 15234,
-│       "started_at": "2026-07-24T08:00:00Z"
+│       "started_at": "2026-07-24T08:00:00Z",
+│       "conversation_date": "2026-07"       -- 对话发生的月份，用于时间线归档
 │     }
 │
 ├── metadata               JSONB DEFAULT '{}'
@@ -548,6 +549,8 @@ distito 生成的每个公开文章页都内嵌一个 JSON-LD 块，供 Agent �
 | `author` | 是 | 作者信息（slug / display_name） |
 | `base` | 是 | 所属 Base（slug / name） |
 | `published_at` | 是 | 发布时间 |
+| `created_at` | 是 | 知识在对话中被蒸馏出来的时间 |
+| `conversation_date` | 否 | 对话发生的月份范围，如 `2026-07` |
 | `url` | 是 | 原始文章链接（任何域名下都可追溯回原址） |
 | `injections` | 否 | 上游文章 UUID 列表，有则标记为 inject 类型 |
 | `tags` | 否 | 标签 |
